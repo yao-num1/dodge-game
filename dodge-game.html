@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>飞机躲避障碍物</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            font-family: 'Arial', sans-serif;
+        }
+
+        .game-container {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            color: #fff;
+            margin-bottom: 15px;
+            font-size: 2em;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+        }
+
+        .score-board {
+            color: #fff;
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            padding: 10px 30px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 25px;
+            display: inline-block;
+        }
+
+        .dodge-count {
+            color: #ffd700;
+            font-weight: bold;
+            font-size: 1.3em;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            display: inline-block;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+        }
+
+        #gameCanvas {
+            background: linear-gradient(180deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            display: block;
+        }
+
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            color: #fff;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            z-index: 10;
+            border: 2px solid rgba(255, 107, 107, 0.5);
+        }
+
+        .game-over h2 {
+            color: #ff6b6b;
+            font-size: 2.5em;
+            margin-bottom: 15px;
+        }
+
+        .game-over p {
+            font-size: 1.3em;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #00d4aa, #00a884);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1em;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 212, 170, 0.4);
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 212, 170, 0.6);
+        }
+
+        .controls {
+            margin-top: 15px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9em;
+        }
+
+        .controls p {
+            margin: 5px 0;
+        }
+
+        .color-indicator {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-left: 10px;
+            vertical-align: middle;
+            border: 2px solid #fff;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>✈️ 飞机躲避战</h1>
+        <div class="score-board">
+            躲避次数: <span class="dodge-count" id="dodgeCount">0</span>
+            <span class="color-indicator" id="colorIndicator" style="background-color: #ff0000;"></span>
+        </div>
+        <div class="canvas-wrapper">
+            <canvas id="gameCanvas" width="400" height="600"></canvas>
+            <div class="game-over" id="gameOver">
+                <h2>游戏结束</h2>
+                <p>最终躲避: <span id="finalScore">0</span> 次</p>
+                <button class="btn" onclick="restartGame()">重新开始</button>
+            </div>
+        </div>
+        <div class="controls">
+            <p>使用 ← → 方向键移动飞机躲避障碍物</p>
+            <p>每成功躲避一次，飞机会随机变色（红/黄/蓝）</p>
+        </div>
+        <div style="margin-top: 15px;">
+            <button class="btn" id="startBtn" onclick="startGame()">开始游戏</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const dodgeCountElement = document.getElementById('dodgeCount');
+        const colorIndicator = document.getElementById('colorIndicator');
+        const finalScoreElement = document.getElementById('finalScore');
+        const gameOverScreen = document.getElementById('gameOver');
+        const startBtn = document.getElementById('startBtn');
+
+        // 游戏配置
+        const PLANE_WIDTH = 40;
+        const PLANE_HEIGHT = 50;
+        const OBSTACLE_WIDTH = 60;
+        const OBSTACLE_HEIGHT = 30;
+        const PLANE_SPEED = 5;
+        const INITIAL_OBSTACLE_SPEED = 3;
+
+        // 飞机颜色选项
+        const PLANE_COLORS = ['#ff0000', '#ffff00', '#0000ff']; // 红、黄、蓝
+
+        // 游戏状态
+        let plane = {
+            x: canvas.width / 2 - PLANE_WIDTH / 2,
+            y: canvas.height - PLANE_HEIGHT - 20,
+            width: PLANE_WIDTH,
+            height: PLANE_HEIGHT,
+            color: PLANE_COLORS[0],
+            speed: PLANE_SPEED
+        };
+
+        let obstacles = [];
+        let dodgeCount = 0;
+        let obstacleSpeed = INITIAL_OBSTACLE_SPEED;
+        let isGameRunning = false;
+        let gameLoop = null;
+        let lastObstacleTime = 0;
+        let obstacleInterval = 1500; // 障碍物生成间隔（毫秒）
+
+        // 键盘状态
+        const keys = {
+            ArrowLeft: false,
+            ArrowRight: false
+        };
+
+        // 绘制飞机
+        function drawPlane() {
+            const x = plane.x;
+            const y = plane.y;
+            const w = plane.width;
+            const h = plane.height;
+
+            // 飞机主体（机身）
+            ctx.fillStyle = plane.color;
+            ctx.beginPath();
+            ctx.moveTo(x + w / 2, y); // 机头顶部
+            ctx.lineTo(x + w, y + h * 0.7); // 右翼
+            ctx.lineTo(x + w * 0.7, y + h * 0.7);
+            ctx.lineTo(x + w * 0.7, y + h); // 右翼尾
+            ctx.lineTo(x + w * 0.3, y + h); // 左翼尾
+            ctx.lineTo(x + w * 0.3, y + h * 0.7);
+            ctx.lineTo(x, y + h * 0.7); // 左翼
+            ctx.closePath();
+            ctx.fill();
+
+            // 飞机高光效果
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.beginPath();
+            ctx.moveTo(x + w / 2, y + 5);
+            ctx.lineTo(x + w / 2 + 5, y + h * 0.4);
+            ctx.lineTo(x + w / 2 - 5, y + h * 0.4);
+            ctx.closePath();
+            ctx.fill();
+
+            // 驾驶舱
+            ctx.fillStyle = 'rgba(135, 206, 235, 0.8)';
+            ctx.beginPath();
+            ctx.ellipse(x + w / 2, y + h * 0.35, w * 0.15, h * 0.12, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 引擎火焰效果
+            const flameOffset = Math.random() * 5;
+            ctx.fillStyle = '#ff6600';
+            ctx.beginPath();
+            ctx.moveTo(x + w * 0.35, y + h);
+            ctx.lineTo(x + w * 0.45, y + h + 10 + flameOffset);
+            ctx.lineTo(x + w * 0.5, y + h + 5);
+            ctx.lineTo(x + w * 0.55, y + h + 10 + flameOffset);
+            ctx.lineTo(x + w * 0.65, y + h);
+            ctx.closePath();
+            ctx.fill();
+
+            // 引擎火焰内部
+            ctx.fillStyle = '#ffff00';
+            ctx.beginPath();
+            ctx.moveTo(x + w * 0.4, y + h);
+            ctx.lineTo(x + w * 0.5, y + h + 8 + flameOffset * 0.5);
+            ctx.lineTo(x + w * 0.6, y + h);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // 绘制障碍物
+        function drawObstacle(obstacle) {
+            // 障碍物主体
+            const gradient = ctx.createLinearGradient(obstacle.x, obstacle.y, obstacle.x, obstacle.y + obstacle.height);
+            gradient.addColorStop(0, '#ff4444');
+            gradient.addColorStop(0.5, '#cc0000');
+            gradient.addColorStop(1, '#880000');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+
+            // 障碍物边框
+            ctx.strokeStyle = '#ff6666';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+
+            // 危险标志
+            ctx.fillStyle = '#ffff00';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('!', obstacle.x + obstacle.width / 2, obstacle.y + obstacle.height / 2 + 6);
+
+            // 尖刺效果
+            ctx.fillStyle = '#ff4444';
+            for (let i = 0; i < 3; i++) {
+                const spikeX = obstacle.x + (i + 1) * (obstacle.width / 4);
+                ctx.beginPath();
+                ctx.moveTo(spikeX - 5, obstacle.y);
+                ctx.lineTo(spikeX, obstacle.y - 8);
+                ctx.lineTo(spikeX + 5, obstacle.y);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        // 绘制背景星星
+        function drawStars() {
+            ctx.fillStyle = '#ffffff';
+            for (let i = 0; i < 50; i++) {
+                const x = (i * 37) % canvas.width;
+                const y = (i * 23 + Date.now() * 0.02) % canvas.height;
+                const size = (i % 3) + 1;
+                ctx.globalAlpha = 0.3 + (i % 5) * 0.1;
+                ctx.fillRect(x, y, size, size);
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        // 生成障碍物
+        function spawnObstacle() {
+            const minX = 20;
+            const maxX = canvas.width - OBSTACLE_WIDTH - 20;
+            const x = Math.random() * (maxX - minX) + minX;
+            
+            obstacles.push({
+                x: x,
+                y: -OBSTACLE_HEIGHT,
+                width: OBSTACLE_WIDTH,
+                height: OBSTACLE_HEIGHT,
+                passed: false
+            });
+        }
+
+        // 更新游戏状态
+        function update() {
+            if (!isGameRunning) return;
+
+            // 移动飞机
+            if (keys.ArrowLeft && plane.x > 0) {
+                plane.x -= plane.speed;
+            }
+            if (keys.ArrowRight && plane.x < canvas.width - plane.width) {
+                plane.x += plane.speed;
+            }
+
+            // 生成新障碍物
+            const now = Date.now();
+            if (now - lastObstacleTime > obstacleInterval) {
+                spawnObstacle();
+                lastObstacleTime = now;
+                // 随着游戏进行，加快生成速度
+                obstacleInterval = Math.max(800, 1500 - dodgeCount * 50);
+            }
+
+            // 更新障碍物位置
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obs = obstacles[i];
+                obs.y += obstacleSpeed;
+
+                // 检测碰撞
+                if (checkCollision(plane, obs)) {
+                    gameOver();
+                    return;
+                }
+
+                // 检测成功躲避
+                if (!obs.passed && obs.y > plane.y + plane.height) {
+                    obs.passed = true;
+                    dodgeCount++;
+                    dodgeCountElement.textContent = dodgeCount;
+                    
+                    // 飞机变色
+                    changePlaneColor();
+                    
+                    // 增加难度
+                    obstacleSpeed = INITIAL_OBSTACLE_SPEED + dodgeCount * 0.2;
+                }
+
+                // 移除超出屏幕的障碍物
+                if (obs.y > canvas.height) {
+                    obstacles.splice(i, 1);
+                }
+            }
+        }
+
+        // 碰撞检测
+        function checkCollision(plane, obstacle) {
+            // 缩小碰撞检测区域，使游戏更公平
+            const planeHitbox = {
+                x: plane.x + 5,
+                y: plane.y + 5,
+                width: plane.width - 10,
+                height: plane.height - 10
+            };
+
+            return planeHitbox.x < obstacle.x + obstacle.width &&
+                   planeHitbox.x + planeHitbox.width > obstacle.x &&
+                   planeHitbox.y < obstacle.y + obstacle.height &&
+                   planeHitbox.y + planeHitbox.height > obstacle.y;
+        }
+
+        // 改变飞机颜色
+        function changePlaneColor() {
+            const randomIndex = Math.floor(Math.random() * PLANE_COLORS.length);
+            plane.color = PLANE_COLORS[randomIndex];
+            colorIndicator.style.backgroundColor = plane.color;
+        }
+
+        // 绘制游戏画面
+        function draw() {
+            // 清空画布
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 绘制背景星星
+            drawStars();
+
+            // 绘制障碍物
+            obstacles.forEach(obstacle => drawObstacle(obstacle));
+
+            // 绘制飞机
+            drawPlane();
+        }
+
+        // 游戏主循环
+        function gameStep() {
+            update();
+            draw();
+            if (isGameRunning) {
+                gameLoop = requestAnimationFrame(gameStep);
+            }
+        }
+
+        // 开始游戏
+        function startGame() {
+            if (isGameRunning) return;
+
+            // 重置游戏状态
+            plane.x = canvas.width / 2 - PLANE_WIDTH / 2;
+            plane.color = PLANE_COLORS[0];
+            obstacles = [];
+            dodgeCount = 0;
+            obstacleSpeed = INITIAL_OBSTACLE_SPEED;
+            obstacleInterval = 1500;
+            lastObstacleTime = Date.now();
+
+            dodgeCountElement.textContent = dodgeCount;
+            colorIndicator.style.backgroundColor = plane.color;
+            gameOverScreen.style.display = 'none';
+            startBtn.textContent = '游戏中...';
+            startBtn.disabled = true;
+
+            isGameRunning = true;
+            gameStep();
+        }
+
+        // 游戏结束
+        function gameOver() {
+            isGameRunning = false;
+            cancelAnimationFrame(gameLoop);
+            finalScoreElement.textContent = dodgeCount;
+            gameOverScreen.style.display = 'block';
+            startBtn.textContent = '开始游戏';
+            startBtn.disabled = false;
+        }
+
+        // 重新开始
+        function restartGame() {
+            gameOverScreen.style.display = 'none';
+            startGame();
+        }
+
+        // 键盘事件监听
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                e.preventDefault();
+                keys[e.key] = true;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                keys[e.key] = false;
+            }
+        });
+
+        // 初始绘制
+        drawStars();
+        drawPlane();
+    </script>
+</body>
+</html>
