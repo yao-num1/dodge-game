@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雅韵轩 - 中华美食</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Serif SC', serif;
+            background: linear-gradient(135deg, #f5f5dc 0%, #e8dcc8 50%, #d4c4a8 100%);
+            min-height: 100vh;
+        }
+        
+        /* 首页样式 */
+        .home-page {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800"><rect fill="%23f5f5dc" width="1200" height="800"/><path fill="%23d4c4a8" opacity="0.3" d="M0 400c200-100 400-100 600 0s400 100 600 0v400H0z"/></svg>') center/cover;
+            position: relative;
+        }
+        
+        .home-page::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="%23c41e3a" stroke-width="0.5" opacity="0.1"/></svg>') repeat;
+            opacity: 0.3;
+        }
+        
+        .restaurant-name {
+            font-size: 4em;
+            color: #c41e3a;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.2);
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .restaurant-subtitle {
+            font-size: 1.2em;
+            color: #8b4513;
+            margin-bottom: 50px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .dining-options {
+            display: flex;
+            gap: 40px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .dining-card {
+            width: 200px;
+            height: 250px;
+            background: linear-gradient(145deg, #fff 0%, #f5f5dc 100%);
+            border: 3px solid #c41e3a;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(196, 30, 58, 0.2);
+        }
+        
+        .dining-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(196, 30, 58, 0.3);
+        }
+        
+        .dining-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+        
+        .dining-text {
+            font-size: 1.5em;
+            color: #c41e3a;
+            font-weight: 600;
+        }
+        
+        /* 菜单页面 */
+        .menu-page, .profile-page {
+            display: none;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #c41e3a 0%, #8b0000 100%);
+            color: #ffd700;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .header-title {
+            font-size: 1.5em;
+            font-weight: 700;
+        }
+        
+        .header-icons {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .header-icon {
+            font-size: 1.5em;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .cart-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ffd700;
+            color: #c41e3a;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7em;
+            font-weight: bold;
+        }
+        
+        /* 分类标签 */
+        .category-tabs {
+            display: flex;
+            overflow-x: auto;
+            background: #fff;
+            padding: 10px;
+            gap: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .category-tab {
+            padding: 10px 20px;
+            background: #f5f5dc;
+            border: 2px solid #d4c4a8;
+            border-radius: 25px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s;
+            color: #8b4513;
+        }
+        
+        .category-tab.active {
+            background: #c41e3a;
+            color: #ffd700;
+            border-color: #c41e3a;
+        }
+        
+        /* 菜品列表 */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            padding-bottom: 100px;
+        }
+        
+        .dish-card {
+            background: #fff;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+            border: 2px solid #d4c4a8;
+        }
+        
+        .dish-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        
+        .dish-image {
+            width: 100%;
+            height: 180px;
+            background: linear-gradient(135deg, #e8dcc8 0%, #d4c4a8 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4em;
+        }
+        
+        .dish-info {
+            padding: 15px;
+        }
+        
+        .dish-name {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .dish-desc {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .dish-price-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .dish-price {
+            font-size: 1.3em;
+            color: #c41e3a;
+            font-weight: 700;
+        }
+        
+        .add-btn {
+            background: #c41e3a;
+            color: #ffd700;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .add-btn:hover {
+            background: #8b0000;
+            transform: scale(1.05);
+        }
+        
+        /* 底部结算栏 */
+        .checkout-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #fff;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+            border-top: 3px solid #c41e3a;
+        }
+        
+        .total-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .cart-icon {
+            font-size: 2em;
+            position: relative;
+        }
+        
+        .total-text {
+            font-size: 1.1em;
+            color: #666;
+        }
+        
+        .total-price {
+            font-size: 1.8em;
+            color: #c41e3a;
+            font-weight: 700;
+        }
+        
+        .checkout-btn {
+            background: linear-gradient(135deg, #c41e3a 0%, #8b0000 100%);
+            color: #ffd700;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 30px;
+            font-size: 1.2em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .checkout-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(196, 30, 58, 0.4);
+        }
+        
+        /* 个人中心 */
+        .profile-header {
+            background: linear-gradient(135deg, #c41e3a 0%, #8b0000 100%);
+            padding: 40px 20px;
+            text-align: center;
+            color: #ffd700;
+        }
+        
+        .avatar {
+            width: 100px;
+            height: 100px;
+            background: #ffd700;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3em;
+            border: 4px solid #fff;
+        }
+        
+        .username {
+            font-size: 1.5em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .member-level {
+            background: #ffd700;
+            color: #c41e3a;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+        
+        .profile-menu {
+            background: #fff;
+            margin: 20px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        
+        .profile-item {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .profile-item:hover {
+            background: #f5f5f5;
+        }
+        
+        .profile-item:last-child {
+            border-bottom: none;
+        }
+        
+        .profile-icon {
+            font-size: 1.5em;
+            margin-right: 15px;
+            width: 30px;
+        }
+        
+        .profile-text {
+            flex: 1;
+            font-size: 1.1em;
+            color: #333;
+        }
+        
+        .profile-arrow {
+            color: #999;
+            font-size: 1.2em;
+        }
+        
+        /* 底部导航 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #fff;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+            border-top: 2px solid #d4c4a8;
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            color: #666;
+            transition: color 0.3s;
+        }
+        
+        .nav-item.active {
+            color: #c41e3a;
+        }
+        
+        .nav-icon {
+            font-size: 1.5em;
+            margin-bottom: 5px;
+        }
+        
+        .nav-text {
+            font-size: 0.8em;
+        }
+        
+        /* 返回按钮 */
+        .back-btn {
+            cursor: pointer;
+            font-size: 1.2em;
+        }
+        
+        /* 隐藏类 */
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- 首页 -->
+    <div class="home-page" id="homePage">
+        <h1 class="restaurant-name">雅韵轩</h1>
+        <p class="restaurant-subtitle">传承百年 · 品味中华</p>
+        <div class="dining-options">
+            <div class="dining-card" onclick="selectDining('dine-in')">
+                <div class="dining-icon">🍽️</div>
+                <div class="dining-text">堂食</div>
+            </div>
+            <div class="dining-card" onclick="selectDining('delivery')">
+                <div class="dining-icon">🛵</div>
+                <div class="dining-text">外卖</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 菜单页面 -->
+    <div class="menu-page" id="menuPage">
+        <div class="header">
+            <span class="back-btn" onclick="goBack()">← 返回</span>
+            <span class="header-title">雅韵轩菜单</span>
+            <div class="header-icons">
+                <span class="header-icon" onclick="showProfile()">👤</span>
+                <span class="header-icon" onclick="showCart()">
+                    🛒
+                    <span class="cart-badge" id="cartBadge">0</span>
+                </span>
+            </div>
+        </div>
+        
+        <div class="category-tabs">
+            <div class="category-tab active" onclick="selectCategory(this, 'all')">全部</div>
+            <div class="category-tab" onclick="selectCategory(this, 'signature')">招牌菜</div>
+            <div class="category-tab" onclick="selectCategory(this, 'hot')">热菜</div>
+            <div class="category-tab" onclick="selectCategory(this, 'soup')">汤羹</div>
+            <div class="category-tab" onclick="selectCategory(this, 'staple')">主食</div>
+            <div class="category-tab" onclick="selectCategory(this, 'drink')">饮品</div>
+        </div>
+        
+        <div class="menu-grid" id="menuGrid">
+            <!-- 菜品将通过JS动态生成 -->
+        </div>
+        
+        <div class="checkout-bar">
+            <div class="total-info">
+                <span class="cart-icon">🛒</span>
+                <div>
+                    <div class="total-text">合计</div>
+                    <div class="total-price">¥<span id="totalPrice">0</span></div>
+                </div>
+            </div>
+            <button class="checkout-btn" onclick="checkout()">去结算</button>
+        </div>
+    </div>
+
+    <!-- 个人中心 -->
+    <div class="profile-page" id="profilePage">
+        <div class="header">
+            <span class="back-btn" onclick="goBack()">← 返回</span>
+            <span class="header-title">个人中心</span>
+            <span></span>
+        </div>
+        
+        <div class="profile-header">
+            <div class="avatar">👤</div>
+            <div class="username">美食家</div>
+            <span class="member-level">VIP会员</span>
+        </div>
+        
+        <div class="profile-menu">
+            <div class="profile-item" onclick="showOrders()">
+                <span class="profile-icon">📋</span>
+                <span class="profile-text">我的订单</span>
+                <span class="profile-arrow">›</span>
+            </div>
+            <div class="profile-item" onclick="showAddress()">
+                <span class="profile-icon">📍</span>
+                <span class="profile-text">收货地址</span>
+                <span class="profile-arrow">›</span>
+            </div>
+            <div class="profile-item" onclick="showCoupons()">
+                <span class="profile-icon">🎫</span>
+                <span class="profile-text">优惠券</span>
+                <span class="profile-arrow">›</span>
+            </div>
+            <div class="profile-item" onclick="contactService()">
+                <span class="profile-icon">💬</span>
+                <span class="profile-text">联系客服</span>
+                <span class="profile-arrow">›</span>
+            </div>
+            <div class="profile-item" onclick="showSettings()">
+                <span class="profile-icon">⚙️</span>
+                <span class="profile-text">设置</span>
+                <span class="profile-arrow">›</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 菜品数据
+        const dishes = [
+            { id: 1, name: '北京烤鸭', category: 'signature', price: 168, desc: '皮脆肉嫩，入口即化', icon: '🦆' },
+            { id: 2, name: '宫保鸡丁', category: 'hot', price: 48, desc: '经典川菜，麻辣鲜香', icon: '🍗' },
+            { id: 3, name: '麻婆豆腐', category: 'hot', price: 32, desc: '麻辣鲜香，下饭神器', icon: '🥘' },
+            { id: 4, name: '糖醋里脊', category: 'hot', price: 58, desc: '酸甜可口，外酥里嫩', icon: '🥩' },
+            { id: 5, name: '西湖牛肉羹', category: 'soup', price: 38, desc: '鲜美浓郁，营养丰富', icon: '🍲' },
+            { id: 6, name: '酸辣汤', category: 'soup', price: 28, desc: '酸辣开胃，暖胃佳品', icon: '🥣' },
+            { id: 7, name: '扬州炒饭', category: 'staple', price: 35, desc: '粒粒分明，香气四溢', icon: '🍚' },
+            { id: 8, name: '炸酱面', category: 'staple', price: 28, desc: '酱香浓郁，面条劲道', icon: '🍜' },
+            { id: 9, name: '小笼包', category: 'staple', price: 25, desc: '皮薄馅大，汤汁鲜美', icon: '🥟' },
+            { id: 10, name: '龙井虾仁', category: 'signature', price: 128, desc: '茶香虾鲜，清淡爽口', icon: '🦐' },
+            { id: 11, name: '东坡肉', category: 'signature', price: 88, desc: '肥而不腻，入口即化', icon: '🥓' },
+            { id: 12, name: '酸梅汤', category: 'drink', price: 15, desc: '消暑解渴，酸甜可口', icon: '🥤' },
+            { id: 13, name: '豆浆', category: 'drink', price: 8, desc: '现磨豆浆，香浓顺滑', icon: '🥛' },
+            { id: 14, name: '清蒸鲈鱼', category: 'hot', price: 98, desc: '鲜嫩可口，营养丰富', icon: '🐟' },
+            { id: 15, name: '蛋炒饭', category: 'staple', price: 22, desc: '简单美味，经典主食', icon: '🍛' }
+        ];
+
+        let cart = [];
+        let currentCategory = 'all';
+        let diningType = '';
+
+        // 选择用餐方式
+        function selectDining(type) {
+            diningType = type;
+            document.getElementById('homePage').style.display = 'none';
+            document.getElementById('menuPage').style.display = 'block';
+            renderMenu();
+        }
+
+        // 渲染菜单
+        function renderMenu() {
+            const menuGrid = document.getElementById('menuGrid');
+            const filteredDishes = currentCategory === 'all' 
+                ? dishes 
+                : dishes.filter(d => d.category === currentCategory);
+            
+            menuGrid.innerHTML = filteredDishes.map(dish => `
+                <div class="dish-card">
+                    <div class="dish-image">${dish.icon}</div>
+                    <div class="dish-info">
+                        <div class="dish-name">${dish.name}</div>
+                        <div class="dish-desc">${dish.desc}</div>
+                        <div class="dish-price-row">
+                            <span class="dish-price">¥${dish.price}</span>
+                            <button class="add-btn" onclick="addToCart(${dish.id})">+</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 选择分类
+        function selectCategory(element, category) {
+            document.querySelectorAll('.category-tab').forEach(tab => tab.classList.remove('active'));
+            element.classList.add('active');
+            currentCategory = category;
+            renderMenu();
+        }
+
+        // 添加到购物车
+        function addToCart(dishId) {
+            const dish = dishes.find(d => d.id === dishId);
+            const existingItem = cart.find(item => item.id === dishId);
+            
+            if (existingItem) {
+                existingItem.quantity++;
+            } else {
+                cart.push({ ...dish, quantity: 1 });
+            }
+            
+            updateCart();
+        }
+
+        // 更新购物车
+        function updateCart() {
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const totalPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            
+            document.getElementById('cartBadge').textContent = totalItems;
+            document.getElementById('totalPrice').textContent = totalPrice;
+        }
+
+        // 显示购物车
+        function showCart() {
+            if (cart.length === 0) {
+                alert('购物车是空的');
+                return;
+            }
+            
+            let cartText = '购物车：\n\n';
+            cart.forEach(item => {
+                cartText += `${item.name} x${item.quantity} = ¥${item.price * item.quantity}\n`;
+            });
+            cartText += `\n总计：¥${cart.reduce((sum, item) => sum + item.price * item.quantity, 0)}`;
+            
+            alert(cartText);
+        }
+
+        // 结算
+        function checkout() {
+            if (cart.length === 0) {
+                alert('请先选择菜品');
+                return;
+            }
+            
+            const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            alert(`订单提交成功！\n用餐方式：${diningType === 'dine-in' ? '堂食' : '外卖'}\n总金额：¥${total}\n\n感谢您的光临！`);
+            cart = [];
+            updateCart();
+        }
+
+        // 显示个人中心
+        function showProfile() {
+            document.getElementById('menuPage').style.display = 'none';
+            document.getElementById('profilePage').style.display = 'block';
+        }
+
+        // 返回
+        function goBack() {
+            document.getElementById('menuPage').style.display = 'none';
+            document.getElementById('profilePage').style.display = 'none';
+            document.getElementById('homePage').style.display = 'flex';
+        }
+
+        // 个人中心功能
+        function showOrders() {
+            alert('我的订单功能');
+        }
+
+        function showAddress() {
+            alert('收货地址功能');
+        }
+
+        function showCoupons() {
+            alert('优惠券功能');
+        }
+
+        function contactService() {
+            alert('客服电话：400-888-8888');
+        }
+
+        function showSettings() {
+            alert('设置功能');
+        }
+
+        // 初始化
+        renderMenu();
+    </script>
+</body>
+</html>
